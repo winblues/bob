@@ -24,11 +24,15 @@ class LLMChatApp(Gtk.Window):
         self.conversations = []
         self.current_convo_index = -1
 
+        # Create a vertical box to hold the paned widget and the status bar
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
         paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
-        self.add(paned)
+        main_box.pack_start(paned, True, True, 0)
 
         self.conversation_list = Gtk.ListBox()
         self.conversation_list.connect("row-selected", self.on_convo_selected)
+
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         left_box.pack_start(self.conversation_list, True, True, 0)
 
@@ -69,9 +73,25 @@ class LLMChatApp(Gtk.Window):
         right_frame.add(right_box)
         paned.pack2(right_frame, resize=True, shrink=False)
 
+        # Create default conversation
+        self.add_conversation(None)
+        self.conversation_list.select_row(self.conversation_list.get_row_at_index(0))  # Focus on the first conversation
+
+        # Add a status bar at the bottom
+        self.statusbar = Gtk.Statusbar()
+        self.statusbar_context_id = self.statusbar.get_context_id("Status")
+        self.statusbar.push(self.statusbar_context_id, "Checking ramalama status...")
+        main_box.pack_start(self.statusbar, False, False, 0)
+
+        # Add the main box to the window
+        self.add(main_box)
+
         self.connect("realize", lambda w: paned.set_position(int(self.get_allocated_width() * 0.4)))
         self.connect("destroy", self.on_destroy)
         self.show_all()
+
+        # Start monitoring ramalama status
+        GLib.timeout_add(1000, self.update_ramalama_status)  # Check status every 1000 ms (1 second)
 
     def wait_for_server(self):
         print("Waiting for ramalama to come up")
@@ -79,11 +99,28 @@ class LLMChatApp(Gtk.Window):
             try:
                 r = requests.get("http://127.0.0.1:8080/")
                 if r.ok:
+                    print("success: ramalama up")
                     return
             except requests.ConnectionError:
                 time.sleep(1)
         print("Ramalama server did not start in time.")
         exit(1)
+
+        
+        # Start monitoring ramalama status
+        GLib.timeout_add(1000, self.update_ramalama_status)  # Check status every 1000 ms (1 second)
+
+    def update_ramalama_status(self):
+        """Periodically check and update the status of ramalama."""
+        try:
+            response = requests.get("http://127.0.0.1:8080/")
+            if response.ok:
+                self.statusbar.push(self.statusbar_context_id, "Ramalama is running!")
+            else:
+                self.statusbar.push(self.statusbar_context_id, "Ramalama is not responding!")
+        except requests.ConnectionError:
+            self.statusbar.push(self.statusbar_context_id, "Ramalama server is down!")
+        return True  # Return True to keep the timeout running
 
     def on_destroy(self, *args):
         if self.ramalama_proc:
