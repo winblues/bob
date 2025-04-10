@@ -49,6 +49,7 @@ class LLMChatApp(Gtk.Window):
         right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
         self.chat_view = Gtk.TextView()
+        self.chat_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.chat_view.set_editable(False)
         self.chat_buffer = self.chat_view.get_buffer()
         chat_scroller = Gtk.ScrolledWindow()
