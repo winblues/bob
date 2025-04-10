@@ -27,40 +27,13 @@ class LLMChatApp(Gtk.Window):
         # Create a vertical box to hold the menu bar, paned widget, and the status bar
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-        # Create the menu bar
-        menu_bar = Gtk.MenuBar()
-
-        # Create the "File" menu
-        file_menu = Gtk.Menu()
-        file_item = Gtk.MenuItem(label="File")
-        file_item.set_submenu(file_menu)
-
-        # Add options to the "File" menu
-        new_item = Gtk.MenuItem(label="New")
-        open_item = Gtk.MenuItem(label="Open")
-        exit_item = Gtk.MenuItem(label="Exit")
-        exit_item.connect("activate", self.on_exit_clicked)
-        file_menu.append(new_item)
-        file_menu.append(open_item)
-        file_menu.append(exit_item)
-
-        # Create the "Edit" menu
-        edit_menu = Gtk.Menu()
-        edit_item = Gtk.MenuItem(label="Edit")
-        edit_item.set_submenu(edit_menu)
-
-        # Add options to the "Edit" menu
-        undo_item = Gtk.MenuItem(label="Undo")
-        redo_item = Gtk.MenuItem(label="Redo")
-        edit_menu.append(undo_item)
-        edit_menu.append(redo_item)
-
-        # Add the "File" and "Edit" menus to the menu bar
-        menu_bar.append(file_item)
-        menu_bar.append(edit_item)
+        menu_bar = self.create_menu_bar()
 
         # Add the menu bar to the main box
         main_box.pack_start(menu_bar, False, False, 0)
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        main_box.pack_start(separator, False, False, 0)
+
         paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
         main_box.pack_start(paned, True, True, 0)
 
@@ -120,12 +93,59 @@ class LLMChatApp(Gtk.Window):
         # Add the main box to the window
         self.add(main_box)
 
-        self.connect("realize", lambda w: paned.set_position(int(self.get_allocated_width() * 0.4)))
+        self.connect("realize", lambda w: paned.set_position(int(self.get_allocated_width() * 0.25)))
         self.connect("destroy", self.on_destroy)
         self.show_all()
 
         # Start monitoring ramalama status
         GLib.timeout_add(1000, self.update_ramalama_status)  # Check status every 1000 ms (1 second)
+
+    def create_menu_bar(self):
+        # Create the menu bar
+        menu_bar = Gtk.MenuBar()
+
+        # Create the "File" menu
+        file_menu = Gtk.Menu()
+        file_item = Gtk.MenuItem(label="File")
+        file_item.set_submenu(file_menu)
+
+        # Add options to the "File" menu
+        new_item = Gtk.MenuItem(label="New")
+        open_item = Gtk.MenuItem(label="Open")
+        exit_item = Gtk.MenuItem(label="Exit")
+        exit_item.connect("activate", self.on_exit_clicked)
+        file_menu.append(new_item)
+        file_menu.append(open_item)
+        file_menu.append(exit_item)
+
+        # Create the "Edit" menu
+        edit_menu = Gtk.Menu()
+        edit_item = Gtk.MenuItem(label="Edit")
+        edit_item.set_submenu(edit_menu)
+
+        # Add options to the "Edit" menu
+        undo_item = Gtk.MenuItem(label="Undo")
+        redo_item = Gtk.MenuItem(label="Redo")
+        edit_menu.append(undo_item)
+        edit_menu.append(redo_item)
+
+        # Create the "Model" menu
+        model_menu = Gtk.Menu()
+        model_item = Gtk.MenuItem(label="Model")
+        model_item.set_submenu(model_menu)
+
+        # Create the "Help" menu
+        help_menu = Gtk.Menu()
+        help_item = Gtk.MenuItem(label="Help")
+        help_item.set_submenu(help_menu)
+
+        # Add the menus to the menu bar
+        menu_bar.append(file_item)
+        menu_bar.append(edit_item)
+        menu_bar.append(model_item)
+        menu_bar.append(help_item)
+        return menu_bar
+
 
     def wait_for_server(self):
         print("Waiting for ramalama to come up")
@@ -149,11 +169,11 @@ class LLMChatApp(Gtk.Window):
         try:
             response = requests.get("http://127.0.0.1:8080/")
             if response.ok:
-                self.statusbar.push(self.statusbar_context_id, "Ramalama is running!")
+                self.statusbar.push(self.statusbar_context_id, "Ramalama is running.")
             else:
                 self.statusbar.push(self.statusbar_context_id, "Ramalama is not responding!")
         except requests.ConnectionError:
-            self.statusbar.push(self.statusbar_context_id, "Ramalama server is down!")
+            self.statusbar.push(self.statusbar_context_id, "Ramalama is down!")
         return True  # Return True to keep the timeout running
 
     def on_destroy(self, *args):
