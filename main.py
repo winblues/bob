@@ -1,25 +1,27 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
-import subprocess
 import requests
-import time
+import subprocess
+import sys
 import threading
+import time
 
 RAMALAMA_URL = "http://127.0.0.1:8080/v1/chat/completions"
+DEFAULT_MODEL = "deepseek-r1:1.5b"
 
 class LLMChatApp(Gtk.Window):
     def __init__(self):
         super().__init__(title="Bob")
+        icon = Gtk.IconTheme.get_default().load_icon("win.blues.Bob", 48, 0)
+        self.set_icon(icon)
         self.set_default_size(800, 600)
 
         self.ramalama_proc = subprocess.Popen(
-            ["ramalama", "serve", "granite3-moe"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            ["ramalama", "serve", DEFAULT_MODEL],
+            stdout=sys.stdout,
+            stderr=sys.stderr,
         )
-
-        self.wait_for_server()
 
         self.conversations = []
         self.current_convo_index = -1
@@ -146,34 +148,18 @@ class LLMChatApp(Gtk.Window):
         menu_bar.append(help_item)
         return menu_bar
 
-
-    def wait_for_server(self):
-        print("Waiting for ramalama to come up")
-        for _ in range(30):
-            try:
-                r = requests.get("http://127.0.0.1:8080/")
-                if r.ok:
-                    print("success: ramalama up")
-                    return
-            except requests.ConnectionError:
-                time.sleep(1)
-        print("Ramalama server did not start in time.")
-        exit(1)
-
-        
-        # Start monitoring ramalama status
-        GLib.timeout_add(1000, self.update_ramalama_status)  # Check status every 1000 ms (1 second)
+    
 
     def update_ramalama_status(self):
         """Periodically check and update the status of ramalama."""
         try:
-            response = requests.get("http://127.0.0.1:8080/")
+            response = requests.get("http://127.0.0.1:8080/health")
             if response.ok:
                 self.statusbar.push(self.statusbar_context_id, "Ramalama is running.")
             else:
                 self.statusbar.push(self.statusbar_context_id, "Ramalama is not responding!")
         except requests.ConnectionError:
-            self.statusbar.push(self.statusbar_context_id, "Ramalama is down!")
+            self.statusbar.push(self.statusbar_context_id, "Ramalama is starting...")
         return True  # Return True to keep the timeout running
 
     def on_destroy(self, *args):
