@@ -58,6 +58,7 @@ class LLMChatApp(Gtk.Window):
 
         prompt_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.prompt_entry = Gtk.Entry()
+        self.prompt_entry.connect("activate", self.on_send_clicked)
         send_button = Gtk.Button(label="Enter")
         send_button.connect("clicked", self.on_send_clicked)
         prompt_box.pack_start(self.prompt_entry, True, True, 0)
